@@ -142,8 +142,6 @@ def test_cxx_vector(program_trace: ProgramTrace):
 @pytest.mark.skip(reason="taint_dag does not support traces yet")
 @pytest.mark.program_trace("test_fgetc.c", input="ABCDEFGH")
 def test_fgetc(program_trace: ProgramTrace):
-    for _ in program_trace:
-        pass
     entrypoint = program_trace.entrypoint
     assert entrypoint is not None
     assert entrypoint.touched_taint

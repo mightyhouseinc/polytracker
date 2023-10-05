@@ -9,7 +9,7 @@ from polytracker.grammars import extract
 def test_extract(program_trace: ProgramTrace):
     grammar = extract([program_trace], simplify=False)
     grammar.verify()
-    print(str(grammar))
+    print(grammar)
 
 
 @pytest.mark.skip(reason="taint_dag does not support traces yet")
@@ -17,4 +17,4 @@ def test_extract(program_trace: ProgramTrace):
 def test_simplify(program_trace: ProgramTrace):
     grammar = extract([program_trace], simplify=True)
     grammar.verify()
-    print(str(grammar))
+    print(grammar)

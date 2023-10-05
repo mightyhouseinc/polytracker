@@ -90,10 +90,7 @@ class DockerContainer:
         self, image_name: str = "trailofbits/polytracker", tag: Optional[str] = None
     ):
         self.image_name: str = image_name
-        if tag is None:
-            self.tag: str = polytracker_version()
-        else:
-            self.tag = tag
+        self.tag = polytracker_version() if tag is None else tag
         self._client: Optional[docker.DockerClient] = None
         self.dockerfile: Dockerfile = Dockerfile(
             Path(__file__).parent.parent / "Dockerfile"
@@ -117,7 +114,7 @@ class DockerContainer:
             source_files.extend(
                 p
                 for p in (root_dir / "polytracker").glob("**/*")
-                if "__pycache__" not in str(p) and not p.suffix == ".py"
+                if "__pycache__" not in str(p) and p.suffix != ".py"
             )
             for path in source_files:
                 mtime = path.stat().st_mtime
@@ -157,18 +154,17 @@ class DockerContainer:
         cwd=None,
     ) -> int:
         if not self.exists():
-            if build_if_necessary:
-                if self.dockerfile.exists():
-                    self.rebuild(nocache=True)
-                else:
-                    self.pull()
-                if not self.exists():
-                    raise ValueError(f"{self.name} does not exist!")
-            else:
+            if not build_if_necessary:
                 raise ValueError(
                     f"{self.name} does not exist! Re-run with `build_if_necessary=True` to automatically "
                     "build it."
                 )
+            if self.dockerfile.exists():
+                self.rebuild(nocache=True)
+            else:
+                self.pull()
+            if not self.exists():
+                raise ValueError(f"{self.name} does not exist!")
         elif check_if_docker_out_of_date and len(self.out_of_date_sources()) > 0:
             oods = [
                 str(s.relative_to(self.dockerfile.path.parent))
@@ -205,9 +201,7 @@ class DockerContainer:
             cmd_args.append("--rm")
 
         for source, target in mounts:
-            cmd_args.append("-v")
-            cmd_args.append(f"{source!s}:{target!s}:cached")
-
+            cmd_args.extend(("-v", f"{source!s}:{target!s}:cached"))
         if env is not None:
             for k, v in env.items():
                 cmd_args.append("-e")
@@ -240,10 +234,14 @@ class DockerContainer:
         return self._client
 
     def exists(self) -> Optional[Image]:
-        for image in self.client.images.list():
-            if self.name in image.tags:
-                return image
-        return None
+        return next(
+            (
+                image
+                for image in self.client.images.list()
+                if self.name in image.tags
+            ),
+            None,
+        )
 
     def pull(self, latest: bool = False) -> Image:
         # We could use the Python API to pull, like this:
@@ -268,8 +266,8 @@ class DockerContainer:
         # use the low-level APIClient so we can get streaming build status
         cli = docker.APIClient()
         with tqdm(
-            desc="Archiving the build directory", unit=" steps", leave=False
-        ) as t:
+                desc="Archiving the build directory", unit=" steps", leave=False
+            ) as t:
             last_line = 0
             last_step = None
             for raw_line in cli.build(
@@ -286,12 +284,11 @@ class DockerContainer:
                     except json.decoder.JSONDecodeError:
                         continue
                     if "stream" in line:
-                        m = re.match(
+                        if m := re.match(
                             r"^Step\s+(\d+)(/(\d+))?\s+:\s+(.+)$",
                             line["stream"],
                             re.MULTILINE,
-                        )
-                        if m:
+                        ):
                             if m.group(3):
                                 # Docker told us the total number of steps!
                                 total_steps = int(m.group(3))
@@ -373,7 +370,6 @@ class DockerPull(DockerSubcommand):
                     "but it does already exist locally."
                 )
                 return 1
-            pass
         sys.stderr.write(
             f"""The docker image {self.container.name} was not found on DockerHub!
 This might happen if you are running a newer version of PolyTracker than the latest release

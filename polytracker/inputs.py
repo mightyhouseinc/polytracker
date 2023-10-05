@@ -49,10 +49,7 @@ class Input:
         self.path: str = path
         self.size: int = size
         self.track_start: int = track_start
-        if track_end is None:
-            self.track_end: int = size
-        else:
-            self.track_end = track_end
+        self.track_end = size if track_end is None else track_end
         self.stored_content: Optional[bytes] = content
 
     @property

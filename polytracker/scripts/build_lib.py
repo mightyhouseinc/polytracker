@@ -120,8 +120,6 @@ for lib in libs:
     else:
         sys.stderr.write("warning: library %s not found\n" % lib)
 
-functions = list(set(functions))
-functions.sort()
-
+functions = sorted(set(functions))
 for f in functions:
-    print("fun:%s=uninstrumented" % f)
+    print(f"fun:{f}=uninstrumented")

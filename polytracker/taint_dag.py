@@ -454,7 +454,7 @@ class TDFile:
         section_offset = sizeof(TDFileMeta)
         self.sections: List[TDSection] = []
         self.sections_by_type: Dict[Type[TDSection], TDSection] = {}
-        for i in range(0, self.filemeta.section_count):
+        for _ in range(0, self.filemeta.section_count):
             hdr = TDSectionMeta.from_buffer_copy(self.buffer, section_offset)
             if hdr.tag == 1:
                 self.sections.append(TDSourceSection(self.buffer, hdr))
@@ -718,17 +718,11 @@ class TDTaintForestNode(TaintForestNode):
 
     @property
     def parent_one(self) -> Optional["TDTaintForestNode"]:
-        if self.parents is None:
-            return None
-
-        return self.forest.get_node(self.parents[0])
+        return None if self.parents is None else self.forest.get_node(self.parents[0])
 
     @property
     def parent_two(self) -> Optional["TDTaintForestNode"]:
-        if self.parents is None:
-            return None
-
-        return self.forest.get_node(self.parents[1])
+        return None if self.parents is None else self.forest.get_node(self.parents[1])
 
 
 class TDTaintForest(TaintForest):

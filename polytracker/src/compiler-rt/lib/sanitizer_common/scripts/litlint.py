@@ -27,9 +27,7 @@ def LintLine(s):
       detected, otherwise (None, None).
     """
 
-    # Check that RUN command can be executed with an emulator
-    m = runRegex.search(s)
-    if m:
+    if m := runRegex.search(s):
         start, end = m.span()
         return ("missing %run before %t", start + 2)
 
@@ -64,11 +62,7 @@ if __name__ == "__main__":
     parser.add_option("--filter")  # ignored
     (options, filenames) = parser.parse_args()
 
-    # Lint each file
-    errs = 0
-    for p in filenames:
-        errs += LintFile(p)
-
+    errs = sum(LintFile(p) for p in filenames)
     # If errors, return nonzero
     if errs > 0:
         sys.exit(1)

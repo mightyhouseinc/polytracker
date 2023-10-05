@@ -99,13 +99,11 @@ html_static_path = ["_static"]
 
 
 def skip(app, what, name, obj, would_skip, options):
-    if name == "__init__":
-        return False
-    return would_skip
+    return False if name == "__init__" else would_skip
 
 
 def docstring_callback(app, what, name, obj, options, lines: list):
-    if what == "class" or what == "function":
+    if what in ["class", "function"]:
         if lines and lines[0].strip():
             lines.insert(1, "")
             lines.insert(2, name)

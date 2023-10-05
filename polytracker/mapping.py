@@ -44,9 +44,7 @@ class InputOutputMapping:
                 continue
 
             elif isinstance(n, TDUnionNode):
-                stack.append(n.left)
-                stack.append(n.right)
-
+                stack.extend((n.left, n.right))
             elif isinstance(n, TDRangeNode):
                 stack.extend(range(n.first, n.last + 1))
 
@@ -68,10 +66,9 @@ class InputOutputMapping:
             if v == 0:
                 if start is None:
                     start = i
-            else:
-                if start is not None:
-                    ranges.append((start, i))
-                    start = None
+            elif start is not None:
+                ranges.append((start, i))
+                start = None
         if start is not None:
             ranges.append((start, len(m)))
         return ranges
@@ -124,7 +121,7 @@ class InputOutputMapping:
 
             # If it is a source node add it (unless it affects control flow as it was already
             # set by the initial sweep).
-            if isinstance(sn, TDSourceNode) and not sn.affects_control_flow:
+            if isinstance(sn, TDSourceNode):
                 markers[sn.idx][sn.offset] = 1
             else:
                 for lbl, n in self.dfs_walk(s.label, seen):

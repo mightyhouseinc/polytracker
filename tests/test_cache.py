@@ -14,9 +14,6 @@ def test_cache():
     assert len(cache) == 10
     assert 1 in cache
     assert 2 not in cache
-    for _ in cache:
-        # make sure we can iterate over the cache, because it will mutate the underlying ordered dict in the process
-        pass
     # the cache should now look like this:
     assert list(cache) == [3, 4, 5, 6, 7, 8, 9, 10, 11, 1]
     # make sure we update the LRU cache on partial iteration

@@ -23,15 +23,15 @@ def process_module(module):
 .. automodule:: {module.__name__}
 """
         )
-        classes = []
-        for name, c in inspect.getmembers(module, inspect.isclass):
+        if classes := [
+            c
+            for name, c in inspect.getmembers(module, inspect.isclass)
             if (
                 hasattr(c, "__module__")
                 and c.__module__ == module.__name__
                 and not name.startswith("_")
-            ):
-                classes.append(c)
-        if classes:
+            )
+        ]:
             f.write(
                 f"""
 {shortname} classes
@@ -52,15 +52,15 @@ def process_module(module):
 """
                 )
 
-        functions = []
-        for name, func in inspect.getmembers(module, inspect.isfunction):
+        if functions := [
+            func
+            for name, func in inspect.getmembers(module, inspect.isfunction)
             if (
                 hasattr(func, "__module__")
                 and func.__module__ == module.__name__
                 and not name.startswith("_")
-            ):
-                functions.append(func)
-        if functions:
+            )
+        ]:
             f.write(
                 f"""
 {shortname} functions
@@ -81,7 +81,7 @@ def process_module(module):
 for name, obj in inspect.getmembers(polytracker, inspect.ismodule):
     if (
         obj.__name__.startswith("polytracker")
-        and not obj.__name__ == "polytracker.polytracker"
+        and obj.__name__ != "polytracker.polytracker"
         and obj not in MODULES
     ):
         MODULES.append(obj)

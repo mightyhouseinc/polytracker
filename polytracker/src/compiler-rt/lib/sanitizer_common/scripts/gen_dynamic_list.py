@@ -21,67 +21,53 @@ import subprocess
 import sys
 import platform
 
-new_delete = set(
-    [
-        "_Znam",
-        "_ZnamRKSt9nothrow_t",  # operator new[](unsigned long)
-        "_Znwm",
-        "_ZnwmRKSt9nothrow_t",  # operator new(unsigned long)
-        "_Znaj",
-        "_ZnajRKSt9nothrow_t",  # operator new[](unsigned int)
-        "_Znwj",
-        "_ZnwjRKSt9nothrow_t",  # operator new(unsigned int)
-        # operator new(unsigned long, std::align_val_t)
-        "_ZnwmSt11align_val_t",
-        "_ZnwmSt11align_val_tRKSt9nothrow_t",
-        # operator new(unsigned int, std::align_val_t)
-        "_ZnwjSt11align_val_t",
-        "_ZnwjSt11align_val_tRKSt9nothrow_t",
-        # operator new[](unsigned long, std::align_val_t)
-        "_ZnamSt11align_val_t",
-        "_ZnamSt11align_val_tRKSt9nothrow_t",
-        # operator new[](unsigned int, std::align_val_t)
-        "_ZnajSt11align_val_t",
-        "_ZnajSt11align_val_tRKSt9nothrow_t",
-        "_ZdaPv",
-        "_ZdaPvRKSt9nothrow_t",  # operator delete[](void *)
-        "_ZdlPv",
-        "_ZdlPvRKSt9nothrow_t",  # operator delete(void *)
-        "_ZdaPvm",  # operator delete[](void*, unsigned long)
-        "_ZdlPvm",  # operator delete(void*, unsigned long)
-        "_ZdaPvj",  # operator delete[](void*, unsigned int)
-        "_ZdlPvj",  # operator delete(void*, unsigned int)
-        # operator delete(void*, std::align_val_t)
-        "_ZdlPvSt11align_val_t",
-        "_ZdlPvSt11align_val_tRKSt9nothrow_t",
-        # operator delete[](void*, std::align_val_t)
-        "_ZdaPvSt11align_val_t",
-        "_ZdaPvSt11align_val_tRKSt9nothrow_t",
-        # operator delete(void*, unsigned long,  std::align_val_t)
-        "_ZdlPvmSt11align_val_t",
-        # operator delete[](void*, unsigned long, std::align_val_t)
-        "_ZdaPvmSt11align_val_t",
-        # operator delete(void*, unsigned int,  std::align_val_t)
-        "_ZdlPvjSt11align_val_t",
-        # operator delete[](void*, unsigned int, std::align_val_t)
-        "_ZdaPvjSt11align_val_t",
-    ]
-)
+new_delete = {
+    "_Znam",
+    "_ZnamRKSt9nothrow_t",
+    "_Znwm",
+    "_ZnwmRKSt9nothrow_t",
+    "_Znaj",
+    "_ZnajRKSt9nothrow_t",
+    "_Znwj",
+    "_ZnwjRKSt9nothrow_t",
+    "_ZnwmSt11align_val_t",
+    "_ZnwmSt11align_val_tRKSt9nothrow_t",
+    "_ZnwjSt11align_val_t",
+    "_ZnwjSt11align_val_tRKSt9nothrow_t",
+    "_ZnamSt11align_val_t",
+    "_ZnamSt11align_val_tRKSt9nothrow_t",
+    "_ZnajSt11align_val_t",
+    "_ZnajSt11align_val_tRKSt9nothrow_t",
+    "_ZdaPv",
+    "_ZdaPvRKSt9nothrow_t",
+    "_ZdlPv",
+    "_ZdlPvRKSt9nothrow_t",
+    "_ZdaPvm",
+    "_ZdlPvm",
+    "_ZdaPvj",
+    "_ZdlPvj",
+    "_ZdlPvSt11align_val_t",
+    "_ZdlPvSt11align_val_tRKSt9nothrow_t",
+    "_ZdaPvSt11align_val_t",
+    "_ZdaPvSt11align_val_tRKSt9nothrow_t",
+    "_ZdlPvmSt11align_val_t",
+    "_ZdaPvmSt11align_val_t",
+    "_ZdlPvjSt11align_val_t",
+    "_ZdaPvjSt11align_val_t",
+}
 
-versioned_functions = set(
-    [
-        "memcpy",
-        "pthread_attr_getaffinity_np",
-        "pthread_cond_broadcast",
-        "pthread_cond_destroy",
-        "pthread_cond_init",
-        "pthread_cond_signal",
-        "pthread_cond_timedwait",
-        "pthread_cond_wait",
-        "realpath",
-        "sched_getaffinity",
-    ]
-)
+versioned_functions = {
+    "memcpy",
+    "pthread_attr_getaffinity_np",
+    "pthread_cond_broadcast",
+    "pthread_cond_destroy",
+    "pthread_cond_init",
+    "pthread_cond_signal",
+    "pthread_cond_timedwait",
+    "pthread_cond_wait",
+    "realpath",
+    "sched_getaffinity",
+}
 
 
 def get_global_functions(nm_executable, library):
@@ -124,9 +110,7 @@ def main(argv):
         if func in new_delete:
             result.append(func)
             continue
-        # Export interceptors.
-        match = re.match("__interceptor_(.*)", func)
-        if match:
+        if match := re.match("__interceptor_(.*)", func):
             result.append(func)
             # We have to avoid exporting the interceptors for versioned library
             # functions due to gold internal error.
@@ -143,8 +127,7 @@ def main(argv):
     # Additional exported functions from files.
     for fname in args.extra:
         f = open(fname, "r")
-        for line in f:
-            result.append(line.rstrip())
+        result.extend(line.rstrip() for line in f)
     # Print the resulting list in the format recognized by ld.
     with open(args.output, "w") as f:
         print("{", file=f)
@@ -152,7 +135,7 @@ def main(argv):
             print("global:", file=f)
         result.sort()
         for sym in result:
-            print("  %s;" % sym, file=f)
+            print(f"  {sym};", file=f)
         if args.version_list:
             print("local:", file=f)
             print("  *;", file=f)

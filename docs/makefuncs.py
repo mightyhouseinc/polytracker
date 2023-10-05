@@ -1,52 +1,48 @@
 FUNCS = frozenset(
-    [
-        o.__name__
-        for o in (
-            enumerate,
-            zip,
-            map,
-            filter,
-            any,
-            all,
-            chr,
-            ord,
-            abs,
-            ascii,
-            bin,
-            hash,
-            hex,
-            oct,
-            min,
-            max,
-            id,
-            iter,
-            len,
-            sorted,
-            sum,
-            round,
-        )
-    ]
+    o.__name__
+    for o in (
+        enumerate,
+        zip,
+        map,
+        filter,
+        any,
+        all,
+        chr,
+        ord,
+        abs,
+        ascii,
+        bin,
+        hash,
+        hex,
+        oct,
+        min,
+        max,
+        id,
+        iter,
+        len,
+        sorted,
+        sum,
+        round,
+    )
 )
 TYPES = frozenset(
-    [
-        o.__name__
-        for o in (
-            str,
-            bool,
-            int,
-            bytes,
-            float,
-            bytearray,
-            dict,
-            set,
-            frozenset,
-            bool,
-            complex,
-            list,
-            slice,
-            tuple,
-        )
-    ]
+    o.__name__
+    for o in (
+        str,
+        bool,
+        int,
+        bytes,
+        float,
+        bytearray,
+        dict,
+        set,
+        frozenset,
+        bool,
+        complex,
+        list,
+        slice,
+        tuple,
+    )
 )
 
 ret = []

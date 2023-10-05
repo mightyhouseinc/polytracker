@@ -27,7 +27,7 @@ def Usage():
 
 
 def CheckBits(bits):
-    if bits != 32 and bits != 64:
+    if bits not in [32, 64]:
         raise Exception("Wrong bitness: %d" % bits)
 
 
@@ -71,7 +71,7 @@ def ReadMagicAndReturnBitness(f, path):
         elif magic_words[1 - idx] == kMagic32SecondHalf:
             bits = 32
     if bits == 0:
-        raise Exception("Bad magic word in %s" % path)
+        raise Exception(f"Bad magic word in {path}")
     return bits
 
 
@@ -81,7 +81,7 @@ def ReadOneFile(path):
         size = f.tell()
         f.seek(0, 0)
         if size < 8:
-            raise Exception("File %s is short (< 8 bytes)" % path)
+            raise Exception(f"File {path} is short (< 8 bytes)")
         bits = ReadMagicAndReturnBitness(f, path)
         size -= 8
         w = size * 8 // bits
@@ -114,9 +114,7 @@ def MergeAndPrint(files):
     if sys.stdout.isatty():
         Usage()
     s = Merge(files)
-    bits = 32
-    if max(s) > 0xFFFFFFFF:
-        bits = 64
+    bits = 64 if max(s) > 0xFFFFFFFF else 32
     stdout_buf = getattr(sys.stdout, "buffer", sys.stdout)
     array.array("I", MagicForBits(bits)).tofile(stdout_buf)
     a = struct.pack(TypeCodeForStruct(bits) * len(s), *s)
@@ -144,7 +142,7 @@ def UnpackOneFile(path):
             with open(extracted_file, "ab") as f2:
                 f2.write(blob)
         # fail
-        raise Exception("Error reading file %s" % path)
+        raise Exception(f"Error reading file {path}")
 
 
 def Unpack(files):
@@ -157,7 +155,7 @@ def UnpackOneRawFile(path, map_path):
     with open(map_path, mode="rt") as f_map:
         sys.stderr.write("%s: reading map %s\n" % (prog_name, map_path))
         bits = int(f_map.readline())
-        if bits != 32 and bits != 64:
+        if bits not in [32, 64]:
             raise Exception("Wrong bits size in the map")
         for line in f_map:
             parts = line.rstrip().split()
@@ -181,7 +179,7 @@ def UnpackOneRawFile(path, map_path):
         pcs = struct.unpack_from(
             TypeCodeForStruct(bits) * (size * 8 // bits), f.read(size)
         )
-        mem_map_pcs = [[] for i in range(0, len(mem_map))]
+        mem_map_pcs = [[] for _ in range(0, len(mem_map))]
 
         for pc in pcs:
             if pc == 0:
@@ -201,7 +199,7 @@ def UnpackOneRawFile(path, map_path):
             if len(pc_list) == 0:
                 continue
             assert path.endswith(".sancov.raw")
-            dst_path = module_path + "." + os.path.basename(path)[:-4]
+            dst_path = f"{module_path}.{os.path.basename(path)[:-4]}"
             sys.stderr.write(
                 "%s: writing %d PCs to %s\n" % (prog_name, len(pc_list), dst_path)
             )
@@ -218,8 +216,8 @@ def UnpackOneRawFile(path, map_path):
 def RawUnpack(files):
     for f in files:
         if not f.endswith(".sancov.raw"):
-            raise Exception("Unexpected raw file name %s" % f)
-        f_map = f[:-3] + "map"
+            raise Exception(f"Unexpected raw file name {f}")
+        f_map = f"{f[:-3]}map"
         UnpackOneRawFile(f, f_map)
 
 
@@ -237,17 +235,17 @@ def GetInstrumentedPCs(binary):
     # The PCs we get from objdump are off by 4 bytes, as they point to the
     # beginning of the callq instruction. Empirically this is true on x86 and
     # x86_64.
-    return set(int(line.strip(), 16) + 4 for line in lines)
+    return {int(line.strip(), 16) + 4 for line in lines}
 
 
 def PrintMissing(binary):
     if not os.path.isfile(binary):
-        raise Exception("File not found: %s" % binary)
+        raise Exception(f"File not found: {binary}")
     instrumented = GetInstrumentedPCs(binary)
     sys.stderr.write(
         "%s: found %d instrumented PCs in %s\n" % (prog_name, len(instrumented), binary)
     )
-    covered = set(int(line, 16) for line in sys.stdin)
+    covered = {int(line, 16) for line in sys.stdin}
     sys.stderr.write("%s: read %d PCs from stdin\n" % (prog_name, len(covered)))
     missing = instrumented - covered
     sys.stderr.write("%s: %d PCs missing from coverage\n" % (prog_name, len(missing)))

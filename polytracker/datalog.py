@@ -17,11 +17,7 @@ TRUE_FACT_NAME = "POLYTRACKER_TRUE_FACT"
 
 # Replaces non alpha numeric characters with their numerical value.
 def datalog_repl_match(matched_str) -> str:
-    ret_str = ""
-    # TODO replace with join?
-    for char in matched_str.group():
-        ret_str += f"_{ord(char)}"
-    return ret_str
+    return "".join(f"_{ord(char)}" for char in matched_str.group())
 
 
 def get_valid_datalog_name(name):
@@ -195,13 +191,7 @@ class DatalogGrammar:
             if prod_name not in unique_rules:
                 unique_rules[prod_name] = True
                 self.clause_decls.append(DatalogRuleDecl(prod_name))
-                # Always output the "<START>" rule.
-                if "<START>" in prod_name:
-                    self.output_decls.append(DatalogOutputDecl(prod_name))
-                # Optional delete this, its useful for debugging
-                else:
-                    self.output_decls.append(DatalogOutputDecl(prod_name))
-
+                self.output_decls.append(DatalogOutputDecl(prod_name))
             # There might be no rules anyway :)
             if len(grammar.productions[prod_name].rules) == 0:
                 self.clauses.append(

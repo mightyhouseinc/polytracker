@@ -470,12 +470,12 @@ class BasicBlock:
 
     def is_loop_entry(self, trace: "ProgramTrace") -> bool:
         """Calculates whether this basic block is an entry to a loop."""
-        predecessors = set(p for p in self.predecessors if self.function == p.function)
+        predecessors = {p for p in self.predecessors if self.function == p.function}
         if len(predecessors) < 2:
             return False
         dominators = set(trace.cfg.dominator_forest.predecessors(self))
         # we are a loop entry if we have one predecessor that dominates us and another that doesn't
-        if not any(p in predecessors for p in dominators):
+        if all(p not in predecessors for p in dominators):
             return False
         return any(p not in dominators for p in predecessors)
 
@@ -807,18 +807,20 @@ class BasicBlockEntry(ControlFlowEvent):
         """Finds the next basic block in this function in the trace"""
         next_event = self.next_control_flow_event
         while next_event is not None:
-            if isinstance(next_event, BasicBlockEntry):
-                if next_event.function_entry == self.function_entry:
-                    return next_event
-                else:
-                    break
-            elif isinstance(next_event, FunctionEntry):
+            if (
+                isinstance(next_event, BasicBlockEntry)
+                and next_event.function_entry == self.function_entry
+            ):
+                return next_event
+            elif isinstance(next_event, BasicBlockEntry) or not isinstance(
+                next_event, FunctionEntry
+            ):
+                break
+            else:
                 next_event = next_event.function_return
                 if next_event is None:
                     break
                 next_event = next_event.next_control_flow_event
-            else:
-                break
         return None
 
     def next_basic_block_in_function_that_touched_taint(
@@ -828,9 +830,7 @@ class BasicBlockEntry(ControlFlowEvent):
         bb = self.next_basic_block_in_function()
         while bb is not None and not bb.touched_taint:
             bb = bb.next_basic_block_in_function()
-        if bb is not None and bb.touched_taint:
-            return bb
-        return None
+        return bb if bb is not None and bb.touched_taint else None
 
     @property
     def consumed_tokens(self) -> Iterable[bytes]:
@@ -872,9 +872,7 @@ class FunctionReturn(ControlFlowEvent):
     def returning_to(self) -> Optional[BasicBlockEntry]:
         """The basic block to which the function returned."""
         next_event = self.next_control_flow_event
-        if isinstance(next_event, BasicBlockEntry):
-            return next_event
-        return None
+        return next_event if isinstance(next_event, BasicBlockEntry) else None
 
     @property
     def returning_from(self) -> Function:
@@ -1091,7 +1089,7 @@ class ProgramTrace(ABC):
         last_offset: Optional[int] = None
         for i, taint_access in enumerate(self.access_sequence()):
             for offset in taint_access.taints():
-                if not offset.source == source:
+                if offset.source != source:
                     continue
                 if first_usages[offset.offset] is None:
                     first_usages[offset.offset] = i

@@ -82,7 +82,7 @@ def positive_number(s: str) -> float:
     return f
 
 def has_docker_image(image_name: str) -> bool:
-    return b'' != check_output(['docker', 'images', '-q', image_name])
+    return check_output(['docker', 'images', '-q', image_name]) != b''
 
 def sha256sum(filename: str) -> str:
     h = hashlib.new('sha256')

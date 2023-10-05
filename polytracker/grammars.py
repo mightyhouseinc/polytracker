@@ -140,10 +140,7 @@ class Rule:
         return bool(self.sequence)
 
     def __str__(self):
-        if not self.sequence:
-            return "ε"
-        else:
-            return " ".join(map(str, self.sequence))
+        return "ε" if not self.sequence else " ".join(map(str, self.sequence))
 
 
 class Production:
@@ -164,10 +161,7 @@ class Production:
         self._can_produce_terminal: Optional[bool] = None
 
     def first_rule(self) -> Optional[Rule]:
-        if self.rules:
-            return next(iter(self.rules))
-        else:
-            return None
+        return next(iter(self.rules)) if self.rules else None
 
     def partial_match(self, sentence: bytes) -> Iterator["PartialMatch"]:
         """Enumerates all partial parse trees and remaining symbols that match the given sentence"""
@@ -223,9 +217,6 @@ class Production:
                                     remaining_symbols[1:],
                                 )
                             )
-                        else:
-                            # the terminal didn't match the input sentence
-                            pass
                     else:
                         # this is a non-terminal
                         for match in self.grammar[next_symbol].partial_match(
@@ -254,9 +245,7 @@ class Production:
 
     def remove_recursive_rules(self) -> Set[Rule]:
         """Removes and returns all rules that solely recursively call this same production"""
-        removed = set(
-            [rule for rule in self if len(rule) == 1 and rule[0] == self.name]
-        )
+        removed = {rule for rule in self if len(rule) == 1 and rule[0] == self.name}
         self.rules -= removed
         return removed
 
@@ -288,8 +277,8 @@ class Production:
                     queue.extend(used_by)
                     visited |= set(used_by)
                     status.update(1)
-            if self._can_produce_terminal is None:
-                self._can_produce_terminal = False
+        if self._can_produce_terminal is None:
+            self._can_produce_terminal = False
         return self._can_produce_terminal  # type: ignore
 
     @property
@@ -381,10 +370,7 @@ class Production:
 
     def __str__(self):
         rules = " | ".join(map(str, self.rules))
-        if self.grammar.start is self:
-            start = "--> "
-        else:
-            start = ""
+        start = "--> " if self.grammar.start is self else ""
         return f"{start}{self.name} ::= {rules}"
 
 
@@ -712,16 +698,14 @@ class EarleyParser:
         if not self.parsed:
             self.parsed = True
             self.start_states = frozenset(
-                [
-                    Prediction(
-                        production=self.start,
-                        parsed=(),
-                        expected=rule.sequence,
-                        index=0,
-                        rule=rule,
-                    )
-                    for rule in self.start.rules
-                ]
+                Prediction(
+                    production=self.start,
+                    parsed=(),
+                    expected=rule.sequence,
+                    index=0,
+                    rule=rule,
+                )
+                for rule in self.start.rules
             )
             for start_state in self.start_states:
                 self.states[0].add(start_state)
@@ -739,12 +723,11 @@ class EarleyParser:
                                 # state is either a Completion, a Scanned Terminal, or a Prediction that has nothing
                                 # parsed yet
                                 self._predict(state, k)
-                        else:
-                            if self._scan(state, k):
-                                last_k_with_match = max(
-                                    last_k_with_match,
-                                    k + len(state.next_element.terminal) - 1,
-                                )
+                        elif self._scan(state, k):
+                            last_k_with_match = max(
+                                last_k_with_match,
+                                k + len(state.next_element.terminal) - 1,
+                            )
                     else:
                         self._complete(state, k)
             if last_k_with_match < len(self.sentence) - 1:
@@ -944,10 +927,7 @@ class _Node:
                 yield node
 
     def iterate(self) -> bool:
-        for node in self.postorder_traversal():
-            if node._iterate_local():
-                return True
-        return False
+        return any(node._iterate_local() for node in self.postorder_traversal())
 
 
 class Match:
@@ -1073,18 +1053,18 @@ class Grammar:
         if self.start is not None and test_disconnection:
             # make sure there is a path from start to every other production
             graph = self.dependency_graph()
-            visited = set(
-                node for node in nx.dfs_preorder_nodes(graph, source=self.start)
-            )
+            visited = set(nx.dfs_preorder_nodes(graph, source=self.start))
             if len(visited) < len(self.productions):
-                not_visited_prods = set(
-                    node for node in self.productions.values() if node not in visited
-                )
-                # it's okay if the unvisited productions aren't able to produce terminals
-                not_visited = [
-                    node.name for node in not_visited_prods if node.can_produce_terminal
-                ]
-                if not_visited:
+                not_visited_prods = {
+                    node
+                    for node in self.productions.values()
+                    if node not in visited
+                }
+                if not_visited := [
+                    node.name
+                    for node in not_visited_prods
+                    if node.can_produce_terminal
+                ]:
                     raise DisconnectedGrammarError(
                         "These productions are not accessible from the start production "
                         f"{self.start.name}: {', '.join(not_visited)}"
@@ -1128,51 +1108,6 @@ class Grammar:
                     status.update(1)
                     modified = True
         return modified
-        modified = False
-        modified_last_pass = True
-        with tqdm(
-            desc="garbage collecting", unit=" productions", leave=False, unit_divisor=1
-        ) as status:
-            while modified_last_pass:
-                modified_last_pass = False
-                for prod in list(self.productions.values()):
-                    # remove any rules in the production that just recursively call the same production
-                    recursive_rules = prod.remove_recursive_rules()
-                    modified_last_pass = bool(recursive_rules)
-                    if not prod.can_produce_terminal and prod is not self.start:
-                        # remove any produtions that only produce empty strings
-                        removed = self.remove(prod)
-                        assert removed
-                        # print(f"removed {prod} because it was empty")
-                        # self.verify(test_disconnection=False)
-                        status.update(1)
-                        modified_last_pass = True
-                    elif len(prod.rules) == 1 and prod is not self.start:
-                        # this production has a single rule, so replace all uses with that rule
-                        for user in list(prod.used_by):
-                            user.replace_sub_production(prod.name, prod.first_rule())  # type: ignore
-                        self.remove(prod)
-                        # print(f"replaced {prod} with {prod.first_rule()}")
-                        # self.verify(test_disconnection=False)
-                        status.update(1)
-                        modified_last_pass = True
-                modified = modified or modified_last_pass
-            # traverse the productions from the least dominant up
-            dominators = self.dependency_graph().dominator_forest
-            ordered_productions: List[Production] = list(
-                nx.dfs_postorder_nodes(dominators, source=self.start)
-            )
-            # see if any of the productions are equivalent. if so, combine them
-            for p1, p2 in itertools.combinations(ordered_productions, 2):
-                if p1 == p2:
-                    # p2 dominates p1 in the grammar, so replace p1 with p2
-                    for user in list(p1.used_by):
-                        user.replace_sub_production(p1.name, p2.name)  # type: ignore
-                    self.remove(p1)
-                    status.update(1)
-                    modified = True
-
-            return modified
 
     def __len__(self):
         return len(self.productions)
@@ -1245,11 +1180,11 @@ def trace_to_grammar(trace: ProgramTrace) -> Grammar:
     num_funcs = trace.num_function_calls()
 
     with tqdm(
-        unit=" productions",
-        leave=False,
-        desc="extracting a base grammar",
-        total=num_funcs,
-    ) as t:
+            unit=" productions",
+            leave=False,
+            desc="extracting a base grammar",
+            total=num_funcs,
+        ) as t:
         while func_stack:
             func = func_stack.pop()
             t.update(1)
@@ -1302,15 +1237,6 @@ def trace_to_grammar(trace: ProgramTrace) -> Grammar:
                             returning_to = ret.returning_to
                             if returning_to is not None:
                                 sub_productions.append(f"<{returning_to!s}>")
-                            else:
-                                # TODO: Print warning
-                                pass
-                                # breakpoint()
-                        else:
-                            # TODO: Print warning
-                            pass
-                            # breakpoint()
-
                     if next_bb is not None:
                         rules = [Rule(grammar, *(sub_productions + [f"<{next_bb!s}>"]))]
                     else:
@@ -1339,7 +1265,7 @@ def extract(traces: Iterable[ProgramTrace], simplify: bool = False) -> Grammar:
     )
     for trace in trace_iter:
         inputs = list(trace.inputs)
-        if len(inputs) == 0:
+        if not inputs:
             raise ValueError(f"Trace {trace} did not load any taints")
         source = inputs[0]
         if len(inputs) > 1:

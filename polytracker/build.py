@@ -15,10 +15,10 @@ def _ensure_path_exists(path: Path) -> Path:
 
 
 def _ensure_env_set(name: str) -> str:
-    var = os.getenv(name, default="")
-    if not var:
+    if var := os.getenv(name, default=""):
+        return var
+    else:
         raise RuntimeError(f"{name} not set")
-    return var
 
 
 def _compiler_dir_path() -> Path:
@@ -210,19 +210,17 @@ def _instrument_bitcode(
         cmd.append(
             f"-pt-taint-ignore-list={POLY_ABI_LIST_PATH}",
         )
-        for item in ignore_lists:
-            cmd.append(f"-pt-taint-ignore-list={ABI_PATH}/{item}")
+        cmd.extend(f"-pt-taint-ignore-list={ABI_PATH}/{item}" for item in ignore_lists)
         # abi lists for `dfsan`
         cmd.append(f"-pt-dfsan-abilist={DFSAN_ABI_LIST_PATH}")
-        for item in ignore_lists:
-            cmd.append(f"-pt-dfsan-abilist={ABI_PATH}/{item}")
-
+        cmd.extend(f"-pt-dfsan-abilist={ABI_PATH}/{item}" for item in ignore_lists)
     if add_function_tracing:
         # ignore lists for `pt-ftrace`
         cmd.append(f"-pt-ftrace-ignore-list={POLY_ABI_LIST_PATH}")
-        for item in ignore_lists:
-            cmd.append(f"-pt-ftrace-ignore-list={ABI_PATH}/{item}")
-
+        cmd.extend(
+            f"-pt-ftrace-ignore-list={ABI_PATH}/{item}"
+            for item in ignore_lists
+        )
     # input and output files
     cmd += [str(input_bitcode), "-o", str(output_bitcode)]
     # execute `cmd`
@@ -241,8 +239,7 @@ def _find_target(target: str, blight_cmds: List[Dict]) -> Tuple[Dict, Path]:
 def _read_blight_journal(journal_path: Path) -> List[Dict]:
     result: List[Dict] = []
     with open(journal_path, "r") as f:
-        for line in f:
-            result.append(json.loads(line))
+        result.extend(json.loads(line) for line in f)
     return result
 
 

@@ -41,11 +41,7 @@ def main():
     if retval is None:
         retval = 0
     elif not isinstance(retval, int):
-        if retval:
-            retval = 0
-        else:
-            retval = 1
-
+        retval = 0 if retval else 1
     return retval
 
 

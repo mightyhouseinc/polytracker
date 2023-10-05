@@ -133,6 +133,7 @@ class ImmutableParseTree(Generic[V], ParseTree[V]):
         return self._children
 
     def clone(self: IPT) -> IPT:
+
         class IPTNode:
             def __init__(
                 self, node: IPT, parent: Optional["IPTNode"] = None  # noqa: F821
@@ -159,7 +160,7 @@ class ImmutableParseTree(Generic[V], ParseTree[V]):
                     assert ipt_node.parent.children is not None
                     ipt_node.parent.children.append(cloned)
                 else:
-                    assert len(to_clone) == 0
+                    assert not to_clone
                     return cloned
         raise ValueError("This should never be reachable")
 
@@ -181,20 +182,19 @@ class MutableParseTree(Generic[V], ImmutableParseTree[V]):
 
 def escape_byte(byte_value: int) -> str:
     if byte_value == ord("\n"):
-        b = "\\n"
+        return "\\n"
     elif byte_value == ord("\t"):
-        b = "\\t"
+        return "\\t"
     elif byte_value == ord("\r"):
-        b = "\\r"
+        return "\\r"
     elif byte_value == ord('"'):
-        b = '\\"'
+        return '\\"'
     elif byte_value == ord("\\"):
-        b = "\\\\"
+        return "\\\\"
     elif ord(" ") <= byte_value <= ord("~"):
-        b = chr(byte_value)
+        return chr(byte_value)
     else:
-        b = f"\\x{byte_value:02x}"
-    return b
+        return f"\\x{byte_value:02x}"
 
 
 def highlight_offset(text: bytes, offset, highlight_length=20) -> str:
@@ -321,15 +321,11 @@ class NonGeneralizedParseTree(MutableParseTree[Union[Start, TraceEvent, Terminal
 
     @property
     def begin_offset(self) -> int:
-        if self._begin is not None:
-            return self._begin
-        return self.intervals.begin()
+        return self._begin if self._begin is not None else self.intervals.begin()
 
     @property
     def end_offset(self) -> int:
-        if self._end is not None:
-            return self._end
-        return self.intervals.end()
+        return self._end if self._end is not None else self.intervals.end()
 
     def terminals(self) -> Iterator[Terminal]:
         for leaf in self.leaves():  # type: ignore
@@ -432,8 +428,7 @@ class NonGeneralizedParseTree(MutableParseTree[Union[Start, TraceEvent, Terminal
         our_last_used = []
         their_last_used = []
         for i in range(to_compare.begin_offset, self.end_offset + 1):
-            our_intervals = self.intervals[i]
-            if our_intervals:
+            if our_intervals := self.intervals[i]:
                 assert len(our_intervals) == 1
                 last_used = next(iter(our_intervals)).data
                 if last_used is None:
@@ -441,8 +436,7 @@ class NonGeneralizedParseTree(MutableParseTree[Union[Start, TraceEvent, Terminal
                 our_last_used.append(last_used)
             else:
                 our_last_used.append(-1)
-            their_intervals = to_compare.intervals[i]
-            if their_intervals:
+            if their_intervals := to_compare.intervals[i]:
                 assert len(their_intervals) == 1
                 last_used = next(iter(their_intervals)).data
                 if last_used is None:
@@ -464,11 +458,11 @@ class NonGeneralizedParseTree(MutableParseTree[Union[Start, TraceEvent, Terminal
         best_point = self.end_offset
         best_badness = None
         for point in range(0, len(winners) + 1):
-            # find the optimal overlap point to partition our intervals
-            badness = 0
-            for i, winner in enumerate(winners):
-                if (i < point and winner < 0) or (i >= point and winner > 0):
-                    badness += 1
+            badness = sum(
+                1
+                for i, winner in enumerate(winners)
+                if (i < point and winner < 0) or (i >= point and winner > 0)
+            )
             if best_badness is None or badness < best_badness:
                 best_point = point
                 best_badness = badness
@@ -563,7 +557,7 @@ def trace_to_non_generalized_tree(trace: ProgramTrace) -> NonGeneralizedParseTre
         unit=" nodes",
     ):
         if isinstance(node.value, Start):
-            node.intervals[0 : len(inputstr)] = 0
+            node.intervals[:len(inputstr)] = 0
         node.bottom_up_pass()
 
     for node in tqdm(

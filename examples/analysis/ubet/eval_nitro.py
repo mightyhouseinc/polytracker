@@ -80,9 +80,7 @@ class OutputInputMapping:
                 continue
 
             elif isinstance(n, TDUnionNode):
-                stack.append(n.left)
-                stack.append(n.right)
-
+                stack.extend((n.left, n.right))
             elif isinstance(n, TDRangeNode):
                 stack.extend(range(n.first, n.last + 1))
 
@@ -146,7 +144,7 @@ def enum_diff(dbg_tdfile, rel_tdfile):
             print(f"Only DBG: {offset_dbg[i]}")
         elif i in offset_rel and i not in offset_dbg:
             print(f"Only REL: {offset_rel[i]}")
-        elif i in offset_dbg and i in offset_rel:
+        elif i in offset_dbg:
             if len(offset_dbg[i]) == 1 and len(offset_rel[i]) == 1:
                 if not eq(offset_dbg[i][0], offset_rel[i][0]):
                     print(f"DBG {offset_dbg[i][0]} - REL {offset_rel[i][0]}")
@@ -159,8 +157,8 @@ def enum_diff(dbg_tdfile, rel_tdfile):
 def compare_inputs_used(dbg_tdfile, rel_tdfile):
     dbg_mapping = OutputInputMapping(dbg_tdfile).mapping()
     rel_mapping = OutputInputMapping(rel_tdfile).mapping()
-    inputs_dbg = set(x[1] for x in dbg_mapping)
-    inputs_rel = set(x[1] for x in rel_mapping)
+    inputs_dbg = {x[1] for x in dbg_mapping}
+    inputs_rel = {x[1] for x in rel_mapping}
     print(f"Input diffs: {sorted(inputs_rel-inputs_dbg)}")
 
 
@@ -185,12 +183,9 @@ def input_set(first_label: int, tdag) -> Set[int]:
         if isinstance(n, taint_dag.TDSourceNode):
             ret.add(n)
         elif isinstance(n, taint_dag.TDUnionNode):
-            q.append(n.left)
-            q.append(n.right)
+            q.extend((n.left, n.right))
         else:
-            for lbl in range(n.first, n.last + 1):
-                q.append(lbl)
-
+            q.extend(iter(range(n.first, n.last + 1)))
     return ret
 
 

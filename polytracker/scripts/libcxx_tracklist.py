@@ -48,33 +48,21 @@ abi_undef = undefined_function_list(cxx_abi)
 
 all_def = cxx_funcs + abi_funcs
 
-all_undef = []
-for func in cxx_undef:
-    if func not in abi_funcs:
-        all_undef.append(func)
-
+all_undef = [func for func in cxx_undef if func not in abi_funcs]
 all_undef += abi_funcs
 
-# all_undef contains all functions in/not in libcxxabi and functions not defined in libcxx
-
-# Here are all the functions not in libcxx that are not defined in libcxxabi
-# This is what our ignore list should be.
-functions = list(set(all_undef))
-functions.sort()
-
+functions = sorted(set(all_undef))
 print("#### ALL FUNCS NOT DEF IN LIBCXX THAT ARE NOT IN LIBCXXABI ####")
 for f in functions:
     f = f.replace("dfsw$", "")
     f = f.replace("dfs$", "")
-    print("fun:%s=uninstrumented" % f)
-    print("fun:%s=discard" % f)
+    print(f"fun:{f}=uninstrumented")
+    print(f"fun:{f}=discard")
 
-# Ignore the ABI
-functions = list(set(abi_funcs))
-functions.sort()
+functions = sorted(set(abi_funcs))
 print("######## GENERATED ABI IGNORE #########")
 for f in functions:
     f = f.replace("dfsw$", "")
     f = f.replace("dfs$", "")
-    print("fun:%s=uninstrumented" % f)
-    print("fun:%s=discard" % f)
+    print(f"fun:{f}=uninstrumented")
+    print(f"fun:{f}=discard")

@@ -10,7 +10,7 @@ from polytracker import PolyTrackerTrace
 
 
 src_arg = Path(sys.argv[1])
-no_build = "nobuild" == sys.argv[2] if len(sys.argv) > 2 else False
+no_build = sys.argv[2] == "nobuild" if len(sys.argv) > 2 else False
 src_dir = src_arg.parent
 src_name = src_arg.name
 print(f"DIR {src_dir} name {src_name}")
@@ -111,7 +111,7 @@ def main():
     results: List[Tuple[bytes, List[str]]] = []
     iter_count = 10
 
-    for i in range(0, iter_count):
+    for _ in range(0, iter_count):
         input = random.randbytes(2)
         output = [run_binary_record_output(binary, input) for binary in binaries]
 

@@ -136,7 +136,7 @@ def test_inputs(input_file: Path, program_trace: ProgramTrace):
 
 
 def input_to_output_path(input: Path) -> Path:
-    return input.parent / (input.name + ".out")
+    return input.parent / f"{input.name}.out"
 
 
 @pytest.mark.program_trace("test_tdag.cpp")

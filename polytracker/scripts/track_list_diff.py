@@ -60,10 +60,7 @@ if they are the same length and have the same items they are the same.
 def list_diff(list1, list2):
     if len(list1) != len(list2):
         return True
-    for item in list1:
-        if item not in list2:
-            return True
-    return False
+    return any(item not in list2 for item in list1)
 
 
 """
@@ -83,7 +80,7 @@ def auto_resolve_conflicts(filename, diff_conflicts):
                 continue
             fname, val = line[4:].split("=")
             if fname in diff_conflicts:
-                file_contents[i] = "#" + file_contents[i]
+                file_contents[i] = f"#{file_contents[i]}"
         curr_file.seek(0)
         curr_file.write("".join(file_contents))
         curr_file.truncate()
@@ -136,7 +133,7 @@ def main():
     if args.choose_file is not None:
         print(args.choose_file)
         truth_file = int(args.choose_file)
-        if truth_file != 1 and truth_file != 2:
+        if truth_file not in [1, 2]:
             print("Error! Invalid choose-file value, pick 1 or 2!")
             sys.exit(1)
         # Comment out conflicts in file 2
@@ -157,7 +154,7 @@ def main():
         print("=" * 10, "FILE 2 CONFLICTS", "=" * 10)
         for file in f2_conflicts:
             print(f"FILE: {file}, CONFLICT:{f2_conflicts[file]}")
-    if len(diff_conflicts) > 0:
+    if diff_conflicts:
         conflicts_found = True
         print("=" * 10, "DIFF CONFLICTS", "=" * 10)
         for file in diff_conflicts:

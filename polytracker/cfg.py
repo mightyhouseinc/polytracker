@@ -29,10 +29,7 @@ class FunctionInfo:
         self.name: str = name
         self.called_from: FrozenSet[str] = frozenset(called_from)
         self._cmp_bytes: Dict[str, List[int]] = cmp_bytes
-        if input_bytes is None:
-            self._input_bytes: Dict[str, List[int]] = cmp_bytes
-        else:
-            self._input_bytes = input_bytes
+        self._input_bytes = cmp_bytes if input_bytes is None else input_bytes
         self._demangled_name: Optional[str] = None
 
     @property
@@ -75,7 +72,7 @@ class FunctionInfo:
         for offset in sorted(byte_offsets):
             if last_offset is None:
                 start_offset = offset
-            elif offset != last_offset and offset != last_offset + 1:
+            elif offset not in [last_offset, last_offset + 1]:
                 yield start_offset, last_offset + 1  # type: ignore
                 start_offset = offset
             last_offset = offset

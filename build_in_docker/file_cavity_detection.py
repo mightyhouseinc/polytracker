@@ -140,10 +140,11 @@ class Tool(ABC):
             )
         )
 
-        exec_info: Dict[str, Union[str, float]] = {}
-        exec_info["command"] = " ".join(command)
-        exec_info["tdag_path"] = str(tdag_host_path)
-        exec_info["start"] = time()
+        exec_info: Dict[str, Union[str, float]] = {
+            "command": " ".join(command),
+            "tdag_path": str(tdag_host_path),
+            "start": time(),
+        }
         ret = None
         try:
             ret = subprocess.run(
@@ -336,9 +337,9 @@ def file_cavity_detection(
     dst_meta = output_dir / f"{file.stem}.meta.json"
     dst_tdag = output_dir / f"{file.stem}.tdag"
 
-    with create_work_dir(Path(output_dir, file.stem)) as tmpd, proc_metadata(
-        dst_meta
-    ) as meta, tdag_dropper(dst_tdag, drop_tdag):
+    with (create_work_dir(Path(output_dir, file.stem)) as tmpd, proc_metadata(
+            dst_meta
+        ) as meta, tdag_dropper(dst_tdag, drop_tdag)):
         output_file = tmpd / f"{file.stem}{tool.output_extension()}"
         results = tool.run_instrumented(file, output_file)
         meta["instrumentation"] = results
@@ -357,8 +358,7 @@ def file_cavity_detection(
 
         command = ["polytracker", "cavities", str(dst_tdag)]
 
-        result_cavity: Dict[str, Union[str, float]] = {}
-        result_cavity["command"] = " ".join(command)
+        result_cavity: Dict[str, Union[str, float]] = {"command": " ".join(command)}
         try:
             result_cavity["start"] = time()
             ret = subprocess.run(command, capture_output=True, timeout=timeout)

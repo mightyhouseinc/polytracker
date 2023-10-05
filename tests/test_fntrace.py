@@ -11,7 +11,7 @@ def test_fn_headers(program_trace: ProgramTrace):
     assert isinstance(program_trace, taint_dag.TDProgramTrace)
     functions = list(program_trace.tdfile.fn_headers)
     names = set(map(lambda f: f[0], functions))
-    assert names == set(["main", "_Z9factoriali"])
+    assert names == {"main", "_Z9factoriali"}
 
 
 @pytest.mark.program_trace("test_fntrace.cpp")

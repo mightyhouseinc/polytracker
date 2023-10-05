@@ -43,10 +43,7 @@ class PolyTrackerCompleter(Completer):
         return None
 
     def bottom_toolbar(self):
-        if self.current_help is not None:
-            return self.current_help
-        else:
-            return ""
+        return self.current_help if self.current_help is not None else ""
 
     def get_completions(self, document, complete_event):
         if self.repl.multi_line and document.text == "":
@@ -60,13 +57,9 @@ class PolyTrackerCompleter(Completer):
                 partial, PolyTrackerREPL.commands, already_yielded, "fg:ansiblue"
             )
         args = document.text.split(" ")
-        if args[0] in PolyTrackerREPL.commands:
-            # We are completing a command
-            # TODO: Parse options and add their help to self.current_help
-            self.current_help = None
-        else:
-            self.current_help = None
-
+        # We are completing a command
+        # TODO: Parse options and add their help to self.current_help
+        self.current_help = None
         yield from PolyTrackerCompleter._get_completions(
             partial,
             (var for var in self.repl.state if var not in self.repl.builtins),
@@ -85,10 +78,10 @@ class PolyTrackerCompleter(Completer):
         if "." in partial:
             portions = partial.split(".")
             varname = portions[-2]
-            to_complete = portions[-1]
             if varname in self.repl.state:
                 attr = self.repl.state[varname]
                 if not isinstance(attr, REPLCommand):
+                    to_complete = portions[-1]
                     yield from PolyTrackerCompleter._get_completions(
                         to_complete,
                         (a for a in dir(attr) if not a.startswith("_")),
@@ -165,7 +158,7 @@ class PolyTrackerREPL:
     def __init__(self):
         self.session = PromptSession(lexer=PygmentsLexer(PythonLexer))
         self.state = {
-            "copyright": f"Copyright (c) 2019-{datetime.today().year} Trail of Bits.\nAll Rights Reserved.",
+            "copyright": f"Copyright (c) 2019-{datetime.now().year} Trail of Bits.\nAll Rights Reserved.",
             "credits": """    PolyTracker was developed by Carson Harmon, Evan Sultanik, and Brad Larsen at Trail of Bits.
     Thanks to Sergey Bratus of DARPA and Galois, Inc. for partially funding this work.
     Also thanks to the LLVM dfsan project for providing a framework off of which to build,
@@ -234,9 +227,9 @@ class PolyTrackerREPL:
             result = input("").lower().strip()
             if not result:
                 return default
-            elif result == "y" or result == "yes":
+            elif result in ["y", "yes"]:
                 return True
-            elif result == "n" or result == "no":
+            elif result in ["n", "no"]:
                 return False
 
     def run_python(self, command):
@@ -283,9 +276,9 @@ class PolyTrackerREPL:
                 try:
                     parsed = ast.parse(command)
                     is_assignment = any(
-                        isinstance(node, ast.Assign)
-                        or isinstance(node, ast.AnnAssign)
-                        or isinstance(node, ast.AugAssign)
+                        isinstance(
+                            node, (ast.Assign, ast.AnnAssign, ast.AugAssign)
+                        )
                         for node in ast.walk(parsed)
                     )
                     break
@@ -401,7 +394,7 @@ class PolyTrackerREPL:
             try:
                 self.run_python(text)
             except NameError as e:
-                print(str(e))
+                print(e)
                 next_prompt = error_prompt
             except SystemExit:
                 break

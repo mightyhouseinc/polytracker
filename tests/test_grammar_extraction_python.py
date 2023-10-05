@@ -73,9 +73,7 @@ class TracedEvent(ABC, TraceEvent):
 
     @property
     def previous_event(self) -> Optional["TraceEvent"]:
-        if self.uid == 0:
-            return None
-        return self.tracer.events[self.uid - 1]
+        return None if self.uid == 0 else self.tracer.events[self.uid - 1]
 
     @property
     def next_event(self) -> Optional["TraceEvent"]:
@@ -233,10 +231,7 @@ class Tracer(ProgramTrace):
 
     @property
     def last_event(self) -> Optional[TraceEvent]:
-        if self.events:
-            return self.events[-1]
-        else:
-            return None
+        return self.events[-1] if self.events else None
 
     @property
     def current_bb(self) -> TracedBasicBlockEntry:
@@ -270,8 +265,8 @@ class Tracer(ProgramTrace):
             self.call_stack[-1].function_return = f
             self.call_stack.pop()
             self.bb_stack[-1].pop()
-            if self.call_stack:
-                self.bb_entry(f"{self.current_bb_name}_after_call_to_{name}")
+        if self.call_stack:
+            self.bb_entry(f"{self.current_bb_name}_after_call_to_{name}")
         return f
 
     def bb_entry(self, name: str) -> TracedBasicBlockEntry:
@@ -302,7 +297,7 @@ def skip_whitespace(tracer: Tracer):
     while True:
         tracer.bb_entry("while_whitespace")
         next_byte = tracer.peek(1)
-        if next_byte == b" " or next_byte == b"\t" or next_byte == "\n":
+        if next_byte in [b" ", b"\t", "\n"]:
             tracer.bb_entry("is_whitespace")
             tracer.input_offset += 1
         else:

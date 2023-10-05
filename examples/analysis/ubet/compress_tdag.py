@@ -54,13 +54,13 @@ def main():
 
     args = parser.parse_args()
 
-    with open(args.input, "rb") as fin, open(args.output, "wb") as fout:
+    with (open(args.input, "rb") as fin, open(args.output, "wb") as fout):
         fmeta_in = taint_dag.TDFileMeta()
         sections_in = []
         sections_out = []
 
         fin.readinto(fmeta_in)
-        for n in range(fmeta_in.section_count):
+        for _ in range(fmeta_in.section_count):
             section = taint_dag.TDSectionMeta()
             fin.readinto(section)
             sections_in.append(section)

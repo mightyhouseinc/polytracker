@@ -38,10 +38,10 @@ def polytracker_version() -> Tuple[int, int, int, Optional[str]]:
     version_parts = {}
     with open(POLYTRACKER_HEADER, "r") as f:
         for i, line in enumerate(f):
-            m = re.match(
-                r"\s*#define\s+POLYTRACKER_VERSION_([A-Za-z_0-9]+)\s+([^\s]+)\s*$", line
-            )
-            if m:
+            if m := re.match(
+                r"\s*#define\s+POLYTRACKER_VERSION_([A-Za-z_0-9]+)\s+([^\s]+)\s*$",
+                line,
+            ):
                 if m[1] not in ("MAJOR", "MINOR", "REVISION", "SUFFIX"):
                     sys.stderr.write(
                         f'Warning: Ignoring unexpected #define for "POLYTRACKER_VERSION_{m[1]}" on line '
@@ -78,10 +78,7 @@ def polytracker_version() -> Tuple[int, int, int, Optional[str]]:
 def polytracker_version_string() -> str:
     *primary, suffix = polytracker_version()
     primary = map(str, primary)
-    if suffix is None:
-        return ".".join(primary)
-    else:
-        return f"{'.'.join(primary)}{suffix}"
+    return ".".join(primary) if suffix is None else f"{'.'.join(primary)}{suffix}"
 
 
 CONSOLE_SCRIPTS = [

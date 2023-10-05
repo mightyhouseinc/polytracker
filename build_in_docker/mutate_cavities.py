@@ -17,12 +17,12 @@ import numpy
 
 def method_zero(cavity: bytearray) -> bytearray:
     """Cavity is replaced with zeros"""
-    return bytearray([0 for x in cavity])
+    return bytearray([0 for _ in cavity])
 
 
 def method_random(cavity: bytearray) -> bytearray:
     """Cavity is replaced with random bytes"""
-    return bytearray([randint(0, 255) for x in cavity])
+    return bytearray([randint(0, 255) for _ in cavity])
 
 
 def method_reverse(cavity: bytearray) -> bytearray:
@@ -62,8 +62,7 @@ def iter_cavity_offsets(
 ) -> Iterable[int]:
     """Iterate each offset considered a cavity"""
     for first, last in iter_cavities(filename, cavities_file):
-        for offset in range(first, last + 1):
-            yield offset
+        yield from range(first, last + 1)
 
 
 class FileMutatorInfo:
@@ -209,7 +208,7 @@ class MutateTest(unittest.TestCase):
 
     def test_method_zero(self):
         cavity = self.gen_cavity()
-        self.assertTrue(all([x == 0 for x in method_zero(cavity)]))
+        self.assertTrue(all(x == 0 for x in method_zero(cavity)))
 
     def test_method_rand(self):
         cavity = self.gen_cavity()
